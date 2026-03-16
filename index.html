@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3-Body Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style> 
+        body { margin: 0; overflow: hidden; background: #000; display: flex; }
+        #controls { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <p>Kéo hành tinh để thay đổi quỹ đạo</p>
+        <button onclick="resetSim()">Reset</button>
+    </div>
+    <script>
+        let bodies = [];
+        let G = 2; // Độ mạnh trọng lực
+        let dragging = null;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            resetSim();
+        }
+
+        function resetSim() {
+            bodies = [];
+            for (let i = 0; i < 3; i++) {
+                bodies.push({
+                    pos: createVector(random(200, width-200), random(200, height-200)),
+                    vel: p5.Vector.random2D().mult(2),
+                    path: []
+                });
+            }
+        }
+
+        function draw() {
+            background(0, 20); // Tạo vệt sáng
+            
+            for (let i = 0; i < bodies.length; i++) {
+                let b = bodies[i];
+                
+                // Tính lực hút từ 2 vật còn lại
+                if (dragging !== b) {
+                    let acc = createVector(0, 0);
+                    for (let j = 0; j < bodies.length; j++) {
+                        if (i !== j) {
+                            let force = p5.Vector.sub(bodies[j].pos, b.pos);
+                            let dist = constrain(force.mag(), 20, 100);
+                            force.setMag((G * 50) / (dist * dist));
+                            acc.add(force);
+                        }
+                    }
+                    b.vel.add(acc);
+                    b.pos.add(b.vel);
+                }
+
+                // Vẽ quỹ đạo
+                b.path.push(b.pos.copy());
+                if (b.path.length > 150) b.path.shift();
+                
+                stroke(255, 150);
+                noFill();
+                beginShape();
+                for(let p of b.path) vertex(p.x, p.y);
+                endShape();
+
+                // Vẽ hành tinh
+                fill(i === 0 ? 'red' : i === 1 ? 'green' : 'blue');
+                ellipse(b.pos.x, b.pos.y, 20);
+            }
+        }
+
+        function mousePressed() {
+            for(let b of bodies) {
+                if(dist(mouseX, mouseY, b.pos.x, b.pos.y) < 30) dragging = b;
+            }
+        }
+
+        function mouseDragged() {
+            if(dragging) {
+                dragging.pos.set(mouseX, mouseY);
+                dragging.vel.set(0, 0);
+                dragging.path = [];
+            }
+        }
+
+        function mouseReleased() { dragging = null; }
+    </script>
+</body>
+</html>
